@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -58,9 +59,9 @@ namespace SchnakyBuddy
         public Schnaky(SchnakyAction action = SchnakyAction.Default)
         {
             this.InitializeComponent();
-
-            this.SchnakyPic = Bitmap.FromFile(Environment.CurrentDirectory + @"\schnake.png");
-            this.SchnakyPicRot = Bitmap.FromFile(Environment.CurrentDirectory + @"\schnake.png");
+            this.Size = new Size(283, 283);
+            this.SchnakyPic = Bitmap.FromFile(Environment.CurrentDirectory + @"\schnake2.png");
+            this.SchnakyPicRotated = Bitmap.FromFile(Environment.CurrentDirectory + @"\schnake2.png");
 
             this.action = action;
             SchnakyHandle = this.Handle;
@@ -86,18 +87,84 @@ namespace SchnakyBuddy
         }
 
         private readonly Image SchnakyPic;
-        private Image SchnakyPicRot;
+        private Image SchnakyPicRotated;
 
         private Bitmap RotateImage(Bitmap b, float angle)
         {
             var returnBitmap = new Bitmap(b.Width, b.Height);
             var g = Graphics.FromImage(returnBitmap);
-            g.InterpolationMode = InterpolationMode.HighQualityBilinear;
+            g.InterpolationMode = InterpolationMode.NearestNeighbor;
             g.TranslateTransform((float)b.Width / 2, (float)b.Height / 2);
             g.RotateTransform(angle);
             g.TranslateTransform(-(float)b.Width / 2, -(float)b.Height / 2);
             g.DrawImage(b, new Point(0, 0));
             return returnBitmap;
+        }
+
+        public static Bitmap RotateImage(Image inputImage, float angleDegrees, bool upsizeOk,
+                                 bool clipOk, Color backgroundColor)
+        {
+            // Test for zero rotation and return a clone of the input image
+            if (angleDegrees == 0f)
+                return (Bitmap)inputImage.Clone();
+
+            // Set up old and new image dimensions, assuming upsizing not wanted and clipping OK
+            int oldWidth = inputImage.Width;
+            int oldHeight = inputImage.Height;
+            int newWidth = oldWidth;
+            int newHeight = oldHeight;
+            float scaleFactor = 1f;
+
+            // If upsizing wanted or clipping not OK calculate the size of the resulting bitmap
+            if (upsizeOk || !clipOk)
+            {
+                double angleRadians = angleDegrees * Math.PI / 180d;
+
+                double cos = Math.Abs(Math.Cos(angleRadians));
+                double sin = Math.Abs(Math.Sin(angleRadians));
+                newWidth = (int)Math.Round(oldWidth * cos + oldHeight * sin);
+                newHeight = (int)Math.Round(oldWidth * sin + oldHeight * cos);
+            }
+
+            // If upsizing not wanted and clipping not OK need a scaling factor
+            if (!upsizeOk && !clipOk)
+            {
+                scaleFactor = Math.Min((float)oldWidth / newWidth, (float)oldHeight / newHeight);
+                newWidth = oldWidth;
+                newHeight = oldHeight;
+            }
+
+            // Create the new bitmap object. If background color is transparent it must be 32-bit, 
+            //  otherwise 24-bit is good enough.
+            Bitmap newBitmap = new Bitmap(newWidth, newHeight, backgroundColor == Color.Transparent ?
+                                             PixelFormat.Format32bppArgb : PixelFormat.Format24bppRgb);
+            newBitmap.SetResolution(inputImage.HorizontalResolution, inputImage.VerticalResolution);
+
+            // Create the Graphics object that does the work
+            using (Graphics graphicsObject = Graphics.FromImage(newBitmap))
+            {
+                graphicsObject.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                graphicsObject.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                graphicsObject.SmoothingMode = SmoothingMode.HighQuality;
+
+                // Fill in the specified background color if necessary
+                if (backgroundColor != Color.Transparent)
+                    graphicsObject.Clear(backgroundColor);
+
+                // Set up the built-in transformation matrix to do the rotation and maybe scaling
+                graphicsObject.TranslateTransform(newWidth / 2f, newHeight / 2f);
+
+                if (scaleFactor != 1f)
+                    graphicsObject.ScaleTransform(scaleFactor, scaleFactor);
+
+                graphicsObject.RotateTransform(angleDegrees);
+                graphicsObject.TranslateTransform(-oldWidth / 2f, -oldHeight / 2f);
+
+                // Draw the result 
+                graphicsObject.DrawImage(inputImage, 0, 0);
+            }
+
+            return newBitmap;
         }
 
         private void DoAction()
@@ -151,10 +218,9 @@ namespace SchnakyBuddy
             else
             {
                 this.GetNewRandomPos();
-                this.SchnakyPicRot = this.RotateImage((Bitmap)this.SchnakyPic, 0);
             }
 
-            this.SchnakyPicRot = this.RotateImage((Bitmap)this.SchnakyPic, CalcSchnakyAngle(SchnakyVelocity));
+            this.SchnakyPicRotated = RotateImage(this.SchnakyPic, CalcSchnakyAngle(SchnakyVelocity), false, true, Color.Transparent);
             SchnakyLocation += SchnakyVelocity;
             
             // Set new location
@@ -271,8 +337,12 @@ namespace SchnakyBuddy
 
         private void Schnaky_Paint(object sender, PaintEventArgs e)
         {
-            var image = this.SchnakyPicRot;
-            e.Graphics.DrawImage(image, new Rectangle(0, 0, 200, 200), new Rectangle(0, 0, image.Width, image.Height), GraphicsUnit.Pixel);
+            var image = SchnakyPicRotated;
+            var destRect = new Rectangle(0, 0, this.Size.Width-1, this.Size.Height-1);
+            var srcRect = new Rectangle(0, 0, image.Width, image.Height);
+            e.Graphics.Clear(Color.Transparent);
+            e.Graphics.DrawRectangle(new Pen(Color.Red), destRect);
+            e.Graphics.DrawImage(image, destRect, srcRect, GraphicsUnit.Pixel);
         }
 
         private readonly Random r = new Random();
