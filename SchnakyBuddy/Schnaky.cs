@@ -208,7 +208,7 @@ namespace SchnakyBuddy
             {
                 this.GetNewRandomPos();
                 var direction = Vector2.Normalize(currentMiddle - mousePos);
-                this.SchnakyVelocity = Vector2.Lerp(SchnakyVelocity, Vector2.Multiply(direction, (8 * 255) / (distance+1)), 0.1f);
+                this.SchnakyVelocity = Vector2.Lerp(SchnakyVelocity, Vector2.Multiply(direction, (8 * 255) / (distance + 1)), 0.1f);
             }
             else if (Vector2.Distance(SchnakyLocation, target) > 20)
             {
@@ -222,7 +222,7 @@ namespace SchnakyBuddy
 
             this.SchnakyPicRotated = RotateImage(this.SchnakyPic, CalcSchnakyAngle(SchnakyVelocity), false, true, Color.Transparent);
             SchnakyLocation += SchnakyVelocity;
-            
+
             // Set new location
             this.Invoke(new MethodInvoker(delegate ()
             {
@@ -233,6 +233,9 @@ namespace SchnakyBuddy
 
         private static float CalcSchnakyAngle(Vector2 direction) => (float)AngleBetween(new Vector2(0, -1), direction);
 
+        /// <summary>
+        /// Calculates the angle between two 2D Vectors. Returns angle in degrees.
+        /// </summary>
         public static double AngleBetween(Vector2 vector1, Vector2 vector2)
         {
             double sin = vector1.X * vector2.Y - vector2.X * vector1.Y;
@@ -347,7 +350,7 @@ namespace SchnakyBuddy
 
         private readonly Random r = new Random();
         private static Vector2 RandomTargetPos = Vector2.Zero;
-        private void GetNewRandomPos() => RandomTargetPos = new Vector2(this.r.Next(Screen.PrimaryScreen.Bounds.Width - this.Size.Width), this.r.Next(Screen.PrimaryScreen.Bounds.Height-this.Size.Height));
+        private void GetNewRandomPos() => RandomTargetPos = new Vector2(this.r.Next(Screen.PrimaryScreen.Bounds.Width - this.Size.Width), this.r.Next(Screen.PrimaryScreen.Bounds.Height - this.Size.Height));
 
         private void timerRandomPos_Tick(object sender, EventArgs e) => this.GetNewRandomPos();
 
