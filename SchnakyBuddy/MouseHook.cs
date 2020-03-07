@@ -35,7 +35,7 @@ namespace SchnakyBuddy
         private static IntPtr HookCallback(
           int nCode, IntPtr wParam, IntPtr lParam)
         {
-            Debug.WriteLine(((int)wParam).ToString("x"));
+            //Debug.WriteLine(((int)wParam).ToString("x"));
             if ((nCode >= 0) && MouseMessages.WM_LBUTTONDOWN == (MouseMessages)wParam)
             {
                 var hookStruct = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT));
