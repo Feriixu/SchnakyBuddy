@@ -331,7 +331,7 @@ namespace SchnakyBuddy
             var destRect = new Rectangle(0, 0, this.Size.Width - 1, this.Size.Height - 1);
             var srcRect = new Rectangle(0, 0, image.Width, image.Height);
             e.Graphics.Clear(Color.Transparent);
-            e.Graphics.DrawRectangle(new Pen(Color.Red), destRect);
+            //e.Graphics.DrawRectangle(new Pen(Color.Red), destRect); 
             e.Graphics.DrawImage(image, destRect, srcRect, GraphicsUnit.Pixel);
         }
 
