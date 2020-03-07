@@ -11,7 +11,7 @@ namespace SchnakyBuddy
         public IntPtr windowHandle;
     }
 
-    static class WindowEnumerator
+    internal static class WindowEnumerator
     {
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern int GetWindowText(IntPtr hWnd, StringBuilder strText, int maxCount);
@@ -24,12 +24,11 @@ namespace SchnakyBuddy
 
         public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
-        private static List<WindowInfo> GetWindows(bool excludeSys)
+        public static List<WindowInfo> GetWindows(bool excludeSys)
         {
             var windows = new List<WindowInfo>();
-            var windowss = FindWindowsWithText(" ");
 
-            foreach (var item in windowss)
+            foreach (var item in FindWindowsWithText(" "))
             {
                 var wnd = new WindowInfo
                 {
