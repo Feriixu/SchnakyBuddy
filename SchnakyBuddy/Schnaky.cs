@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using static SchnakyBuddy.WindowStyle;
 
@@ -118,6 +119,7 @@ namespace SchnakyBuddy
         }
 
         Vector2 SchnakyLocation;
+        Vector2 SchnakyVelocity = Vector2.Zero;
 
         private void TimerMouseCheck_Tick(object sender, EventArgs e)
         {
@@ -133,24 +135,18 @@ namespace SchnakyBuddy
             if (LeftButtonDown)
             {
                 var direction = Vector2.Normalize(mousePos - currentMiddle);
-                var newPos = SchnakyLocation + Vector2.Multiply(direction, 40);
-                this.SchnakyLocation = newPos;
-                this.SchnakyPicRot = this.RotateImage((Bitmap)this.SchnakyPic, CalcSchnakyAngle(direction));
+                this.SchnakyVelocity = Vector2.Lerp(SchnakyVelocity, Vector2.Multiply(direction, 40), 0.1f);
             }
             else if (distance <= 250)
             {
                 this.GetNewRandomPos();
                 var direction = Vector2.Normalize(currentMiddle - mousePos);
-                var newPos = SchnakyLocation + Vector2.Multiply(direction, (8 * 255) / distance);
-                this.SchnakyLocation = newPos;
-                this.SchnakyPicRot = this.RotateImage((Bitmap)this.SchnakyPic, CalcSchnakyAngle(direction));
+                this.SchnakyVelocity = Vector2.Lerp(SchnakyVelocity, Vector2.Multiply(direction, (8 * 255) / distance), 0.1f);
             }
-            else if (Vector2.Distance(SchnakyLocation, target) > 2)
+            else if (Vector2.Distance(SchnakyLocation, target) > 20)
             {
                 var direction = Vector2.Normalize(target - SchnakyLocation);
-                var newPos = SchnakyLocation + Vector2.Multiply(direction, 4);
-                this.SchnakyLocation = newPos;
-                this.SchnakyPicRot = this.RotateImage((Bitmap)this.SchnakyPic, CalcSchnakyAngle(direction));
+                SchnakyVelocity = Vector2.Lerp(SchnakyVelocity, Vector2.Multiply(direction, 8), 0.01f);
             }
             else
             {
@@ -158,6 +154,9 @@ namespace SchnakyBuddy
                 this.SchnakyPicRot = this.RotateImage((Bitmap)this.SchnakyPic, 0);
             }
 
+            this.SchnakyPicRot = this.RotateImage((Bitmap)this.SchnakyPic, CalcSchnakyAngle(SchnakyVelocity));
+            SchnakyLocation += SchnakyVelocity;
+            
             // Set new location
             this.Invoke(new MethodInvoker(delegate ()
             {
