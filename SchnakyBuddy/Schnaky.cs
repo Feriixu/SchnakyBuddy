@@ -7,7 +7,6 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using static SchnakyBuddy.WindowStyle;
 
@@ -79,7 +78,7 @@ namespace SchnakyBuddy
             // Set initial position
 
             this.Location = new Point(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);
-            SchnakyLocation = new Vector2(this.Location.X, this.Location.Y);
+            this.SchnakyLocation = new Vector2(this.Location.X, this.Location.Y);
             // Beepy boi
             //new Task(this.ChangeVolume).Start();
 
@@ -97,19 +96,19 @@ namespace SchnakyBuddy
                 return (Bitmap)inputImage.Clone();
 
             // Set up old and new image dimensions, assuming upsizing not wanted and clipping OK
-            int oldWidth = inputImage.Width;
-            int oldHeight = inputImage.Height;
-            int newWidth = oldWidth;
-            int newHeight = oldHeight;
-            float scaleFactor = 1f;
+            var oldWidth = inputImage.Width;
+            var oldHeight = inputImage.Height;
+            var newWidth = oldWidth;
+            var newHeight = oldHeight;
+            var scaleFactor = 1f;
 
             // If upsizing wanted or clipping not OK calculate the size of the resulting bitmap
             if (upsizeOk || !clipOk)
             {
-                double angleRadians = angleDegrees * Math.PI / 180d;
+                var angleRadians = angleDegrees * Math.PI / 180d;
 
-                double cos = Math.Abs(Math.Cos(angleRadians));
-                double sin = Math.Abs(Math.Sin(angleRadians));
+                var cos = Math.Abs(Math.Cos(angleRadians));
+                var sin = Math.Abs(Math.Sin(angleRadians));
                 newWidth = (int)Math.Round(oldWidth * cos + oldHeight * sin);
                 newHeight = (int)Math.Round(oldWidth * sin + oldHeight * cos);
             }
@@ -124,12 +123,12 @@ namespace SchnakyBuddy
 
             // Create the new bitmap object. If background color is transparent it must be 32-bit, 
             //  otherwise 24-bit is good enough.
-            Bitmap newBitmap = new Bitmap(newWidth, newHeight, backgroundColor == Color.Transparent ?
+            var newBitmap = new Bitmap(newWidth, newHeight, backgroundColor == Color.Transparent ?
                                              PixelFormat.Format32bppArgb : PixelFormat.Format24bppRgb);
             newBitmap.SetResolution(inputImage.HorizontalResolution, inputImage.VerticalResolution);
 
             // Create the Graphics object that does the work
-            using (Graphics graphicsObject = Graphics.FromImage(newBitmap))
+            using (var graphicsObject = Graphics.FromImage(newBitmap))
             {
                 graphicsObject.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 graphicsObject.PixelOffsetMode = PixelOffsetMode.HighQuality;
@@ -173,8 +172,8 @@ namespace SchnakyBuddy
 
         }
 
-        Vector2 SchnakyLocation;
-        Vector2 SchnakyVelocity = Vector2.Zero;
+        private Vector2 SchnakyLocation;
+        private Vector2 SchnakyVelocity = Vector2.Zero;
 
         private void TimerMouseCheck_Tick(object sender, EventArgs e)
         {
@@ -182,7 +181,7 @@ namespace SchnakyBuddy
             var target = RandomTargetPos;
             var mousePos = new Vector2(Cursor.Position.X, Cursor.Position.Y);
 
-            var currentMiddle = new Vector2(SchnakyLocation.X + (this.Size.Width / 2), SchnakyLocation.Y + (this.Size.Height / 2));
+            var currentMiddle = new Vector2(this.SchnakyLocation.X + (this.Size.Width / 2), this.SchnakyLocation.Y + (this.Size.Height / 2));
             //var currentPos = new Vector2(this.Location.X, this.Location.Y);
 
             var distance = Vector2.Distance(currentMiddle, mousePos);
@@ -190,31 +189,31 @@ namespace SchnakyBuddy
             if (LeftButtonDown)
             {
                 var direction = Vector2.Normalize(mousePos - currentMiddle);
-                this.SchnakyVelocity = Vector2.Lerp(SchnakyVelocity, Vector2.Multiply(direction, 40), 0.1f);
+                this.SchnakyVelocity = Vector2.Lerp(this.SchnakyVelocity, Vector2.Multiply(direction, 40), 0.1f);
             }
             else if (distance <= 250)
             {
                 this.GetNewRandomPos();
                 var direction = Vector2.Normalize(currentMiddle - mousePos);
-                this.SchnakyVelocity = Vector2.Lerp(SchnakyVelocity, Vector2.Multiply(direction, (8 * 255) / (distance + 1)), 0.1f);
+                this.SchnakyVelocity = Vector2.Lerp(this.SchnakyVelocity, Vector2.Multiply(direction, (8 * 255) / (distance + 1)), 0.1f);
             }
-            else if (Vector2.Distance(SchnakyLocation, target) > 20)
+            else if (Vector2.Distance(this.SchnakyLocation, target) > 20)
             {
-                var direction = Vector2.Normalize(target - SchnakyLocation);
-                SchnakyVelocity = Vector2.Lerp(SchnakyVelocity, Vector2.Multiply(direction, 8), 0.01f);
+                var direction = Vector2.Normalize(target - this.SchnakyLocation);
+                this.SchnakyVelocity = Vector2.Lerp(this.SchnakyVelocity, Vector2.Multiply(direction, 8), 0.01f);
             }
             else
             {
                 this.GetNewRandomPos();
             }
 
-            this.SchnakyPicRotated = RotateImage(this.SchnakyPic, CalcSchnakyAngle(SchnakyVelocity), false, true, Color.Transparent);
-            SchnakyLocation += SchnakyVelocity;
+            this.SchnakyPicRotated = RotateImage(this.SchnakyPic, CalcSchnakyAngle(this.SchnakyVelocity), false, true, Color.Transparent);
+            this.SchnakyLocation += this.SchnakyVelocity;
 
             // Set new location
             this.Invoke(new MethodInvoker(delegate ()
             {
-                this.Location = new Point((int)SchnakyLocation.X, (int)SchnakyLocation.Y);
+                this.Location = new Point((int)this.SchnakyLocation.X, (int)this.SchnakyLocation.Y);
                 this.Refresh();
             }));
         }
@@ -328,8 +327,8 @@ namespace SchnakyBuddy
 
         private void Schnaky_Paint(object sender, PaintEventArgs e)
         {
-            var image = SchnakyPicRotated;
-            var destRect = new Rectangle(0, 0, this.Size.Width-1, this.Size.Height-1);
+            var image = this.SchnakyPicRotated;
+            var destRect = new Rectangle(0, 0, this.Size.Width - 1, this.Size.Height - 1);
             var srcRect = new Rectangle(0, 0, image.Width, image.Height);
             e.Graphics.Clear(Color.Transparent);
             e.Graphics.DrawRectangle(new Pen(Color.Red), destRect);
@@ -342,9 +341,6 @@ namespace SchnakyBuddy
 
         private void timerRandomPos_Tick(object sender, EventArgs e) => this.GetNewRandomPos();
 
-        private void Schnaky_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            this.notifyIconSchnaky = null;
-        }
+        private void Schnaky_FormClosing(object sender, FormClosingEventArgs e) => this.notifyIconSchnaky = null;
     }
 }
