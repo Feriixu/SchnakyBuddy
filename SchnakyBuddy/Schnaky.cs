@@ -141,7 +141,7 @@ namespace SchnakyBuddy
             {
                 this.GetNewRandomPos();
                 var direction = Vector2.Normalize(currentMiddle - mousePos);
-                this.SchnakyVelocity = Vector2.Lerp(SchnakyVelocity, Vector2.Multiply(direction, (8 * 255) / distance), 0.1f);
+                this.SchnakyVelocity = Vector2.Lerp(SchnakyVelocity, Vector2.Multiply(direction, (8 * 255) / (distance+1)), 0.1f);
             }
             else if (Vector2.Distance(SchnakyLocation, target) > 20)
             {
