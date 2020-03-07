@@ -72,9 +72,9 @@ namespace SchnakyBuddy
             MouseHook.Start();
 
             // Hide window from taskbar and alt tab and processes list
-            var exStyle = (int)GetWindowLong(this.Handle, (int)GetWindowLongFields.GWL_EXSTYLE);
-            exStyle |= (int)ExtendedWindowStyles.WS_EX_TOOLWINDOW;
-            SetWindowLong(this.Handle, (int)GetWindowLongFields.GWL_EXSTYLE, (IntPtr)exStyle);
+            var exStyle = (int)GetWindowLong(this.Handle, (int)GetWindowLongFields.GWL_EXSTYLE); // Get initial style
+            exStyle |= (int)ExtendedWindowStyles.WS_EX_TOOLWINDOW | 0x80000 | 0x20; // Change style
+            SetWindowLong(this.Handle, (int)GetWindowLongFields.GWL_EXSTYLE, (IntPtr)exStyle); // Apply changes
 
             // Set initial position
 
