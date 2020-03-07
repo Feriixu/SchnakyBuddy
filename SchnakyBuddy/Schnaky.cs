@@ -89,18 +89,6 @@ namespace SchnakyBuddy
         private readonly Image SchnakyPic;
         private Image SchnakyPicRotated;
 
-        private Bitmap RotateImage(Bitmap b, float angle)
-        {
-            var returnBitmap = new Bitmap(b.Width, b.Height);
-            var g = Graphics.FromImage(returnBitmap);
-            g.InterpolationMode = InterpolationMode.NearestNeighbor;
-            g.TranslateTransform((float)b.Width / 2, (float)b.Height / 2);
-            g.RotateTransform(angle);
-            g.TranslateTransform(-(float)b.Width / 2, -(float)b.Height / 2);
-            g.DrawImage(b, new Point(0, 0));
-            return returnBitmap;
-        }
-
         public static Bitmap RotateImage(Image inputImage, float angleDegrees, bool upsizeOk,
                                  bool clipOk, Color backgroundColor)
         {
