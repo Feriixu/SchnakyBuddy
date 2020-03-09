@@ -35,6 +35,7 @@
             this.timerGrabWindow = new System.Windows.Forms.Timer(this.components);
             this.timerDragWindow = new System.Windows.Forms.Timer(this.components);
             this.timerMaxGrabTime = new System.Windows.Forms.Timer(this.components);
+            this.timerScreenMelt = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // timerMouseCheck
@@ -66,6 +67,10 @@
             this.timerMaxGrabTime.Interval = 7000;
             this.timerMaxGrabTime.Tick += new System.EventHandler(this.timerMaxGrabTime_Tick);
             // 
+            // timerScreenMelt
+            // 
+            this.timerScreenMelt.Tick += new System.EventHandler(this.timerScreenMelt_Tick);
+            // 
             // Schnaky
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -95,5 +100,6 @@
         private System.Windows.Forms.Timer timerGrabWindow;
         private System.Windows.Forms.Timer timerDragWindow;
         private System.Windows.Forms.Timer timerMaxGrabTime;
+        private System.Windows.Forms.Timer timerScreenMelt;
     }
 }

@@ -63,6 +63,7 @@ namespace SchnakyBuddy
         public Schnaky()
         {
             this.InitializeComponent();
+            StartNewScreenMeltTimer();
             this.Size = new Size(283, 283);
             this.SchnakyPic = Bitmap.FromFile(Environment.CurrentDirectory + @"\schnake2.png");
             this.SchnakyPicRotated = Bitmap.FromFile(Environment.CurrentDirectory + @"\schnake2.png");
@@ -85,8 +86,17 @@ namespace SchnakyBuddy
             this.SchnakyLocation = new Vector2(this.Location.X, this.Location.Y);
             // Beepy boi
             //new Task(this.ChangeVolume).Start();
-
+            this.TopMost = true;
+            ShowWindow(this.Handle, 1);
             //notifyIconSchnaky.ShowBalloonTip(2, "Schnaky", "is running", ToolTipIcon.Info);
+        }
+
+        private void StartNewScreenMeltTimer()
+        {
+            timerScreenMelt.Stop();
+            Random r = new Random();
+            timerScreenMelt.Interval = r.Next(10000, 60000);
+            timerScreenMelt.Start();
         }
 
         private readonly Image SchnakyPic;
@@ -363,6 +373,12 @@ namespace SchnakyBuddy
         private void timerMaxGrabTime_Tick(object sender, EventArgs e)
         {
             this.TargetWindow = false;
+        }
+
+        private void timerScreenMelt_Tick(object sender, EventArgs e)
+        {
+            new ScreenMeltForm(0, 10, r.Next(5000, 15000)).Show();
+            StartNewScreenMeltTimer();
         }
     }
 }

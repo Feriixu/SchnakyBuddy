@@ -17,21 +17,25 @@ namespace SchnakyBuddy
         Screen[] screens = Screen.AllScreens;
         int currentScreen;
 
-        public ScreenMeltForm()
+        public ScreenMeltForm(int index, int interval, int duration)
         {
             InitializeComponent();
-            Start(0, 10);
+            Timer stopTimer = new Timer() { Interval = duration };
+            stopTimer.Tick += this.StopTimer_Tick;
+            stopTimer.Start();
+            Start(index, interval);
         }
 
+        private void StopTimer_Tick(object sender, EventArgs e)
+        {
+            this.Close();
+        }
 
         public void Start(int index, int interval)
         {
             currentScreen = index;
             screen = TakeScreenshot(index);
             pictureBox.Image = screen;
-
-            Show();
-
 
             Location = new Point(screens[currentScreen].Bounds.X, screens[currentScreen].Bounds.Y);
             Bounds = screens[currentScreen].Bounds;
@@ -85,7 +89,7 @@ namespace SchnakyBuddy
         private void ScreenMeltForm_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Escape)
-                Application.Exit();
+                this.Close();
             else
                 e.Handled = false;
         }
