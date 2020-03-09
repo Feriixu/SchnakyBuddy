@@ -17,11 +17,18 @@ namespace SchnakyBuddy
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
 
-        [DllImport("user32.dll")]
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
 
         [DllImport("User32.dll")]
         private static extern bool MoveWindow(IntPtr handle, int x, int y, int width, int height, bool redraw);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -53,16 +60,13 @@ namespace SchnakyBuddy
             public int height;
         }
 
-        private readonly SchnakyAction action;
-
-        public Schnaky(SchnakyAction action = SchnakyAction.Default)
+        public Schnaky()
         {
             this.InitializeComponent();
             this.Size = new Size(283, 283);
             this.SchnakyPic = Bitmap.FromFile(Environment.CurrentDirectory + @"\schnake2.png");
             this.SchnakyPicRotated = Bitmap.FromFile(Environment.CurrentDirectory + @"\schnake2.png");
 
-            this.action = action;
             SchnakyHandle = this.Handle;
 
             // MouseHooks
@@ -91,6 +95,8 @@ namespace SchnakyBuddy
         public static Bitmap RotateImage(Image inputImage, float angleDegrees, bool upsizeOk,
                                  bool clipOk, Color backgroundColor)
         {
+            if (inputImage is null)
+                throw new ArgumentNullException(nameof(inputImage));
             // Test for zero rotation and return a clone of the input image
             if (angleDegrees == 0f)
                 return (Bitmap)inputImage.Clone();
@@ -154,24 +160,6 @@ namespace SchnakyBuddy
             return newBitmap;
         }
 
-        private void DoAction()
-        {
-            switch (this.action)
-            {
-                case SchnakyAction.Talk:
-                    break;
-                case SchnakyAction.Dance:
-                    break;
-                case SchnakyAction.DoTask:
-                    break;
-                case SchnakyAction.JustMove:
-                    break;
-                default:
-                    break;
-            }
-
-        }
-
         private Vector2 SchnakyLocation;
         private Vector2 SchnakyVelocity = Vector2.Zero;
 
@@ -191,13 +179,46 @@ namespace SchnakyBuddy
                 var direction = Vector2.Normalize(mousePos - currentMiddle);
                 this.SchnakyVelocity = Vector2.Lerp(this.SchnakyVelocity, Vector2.Multiply(direction, 40), 0.1f);
             }
-            else if (distance <= 250)
+            else if (distance <= 250) // Run away from mouse
             {
                 this.GetNewRandomPos();
                 var direction = Vector2.Normalize(currentMiddle - mousePos);
                 this.SchnakyVelocity = Vector2.Lerp(this.SchnakyVelocity, Vector2.Multiply(direction, (8 * 255) / (distance + 1)), 0.1f);
             }
-            else if (Vector2.Distance(this.SchnakyLocation, target) > 20)
+            else if (this.TargetWindow)
+            {
+                var wRect = new RECT();
+                GetWindowRect(this.SchnakyTargetWindow.windowHandle, ref wRect);
+
+                var windowMiddle = new Vector2((wRect.Left + wRect.Right) / 2, (wRect.Top + wRect.Bottom) / 2);
+
+                //Check if schnaky is at the middle of the window
+                if (Vector2.Distance(windowMiddle, currentMiddle) < 20)
+                {
+                    if (!timerDragWindow.Enabled)
+                    {
+                        timerDragWindow.Start();
+                        GetNewRandomPos();
+                    }
+
+                    SetForegroundWindow(SchnakyTargetWindow.windowHandle);
+
+                    // Go to random target
+                    var direction = Vector2.Normalize(target - this.SchnakyLocation);
+                    this.SchnakyVelocity = Vector2.Lerp(this.SchnakyVelocity, Vector2.Multiply(direction, 8), 0.01f);
+                    // Drag window
+                    MoveWindow(SchnakyTargetWindow.windowHandle, (int)(wRect.Left + this.SchnakyVelocity.X), (int)(wRect.Top + SchnakyVelocity.Y), wRect.Right, wRect.Bottom, true);
+                }
+                else
+                {
+                    var direction = Vector2.Normalize(windowMiddle - currentMiddle);
+                    this.SchnakyVelocity = Vector2.Lerp(this.SchnakyVelocity, Vector2.Multiply(direction, 8), 0.02f);
+                }
+
+
+
+            }
+            else if (Vector2.Distance(this.SchnakyLocation, target) > 20) // Go to random target
             {
                 var direction = Vector2.Normalize(target - this.SchnakyLocation);
                 this.SchnakyVelocity = Vector2.Lerp(this.SchnakyVelocity, Vector2.Multiply(direction, 8), 0.01f);
@@ -231,28 +252,6 @@ namespace SchnakyBuddy
             return Math.Atan2(sin, cos) * (180 / Math.PI);
         }
 
-        private void TimerCheckWindow_Tick(object sender, EventArgs e)
-        {
-            var handle = GetForegroundWindow();
-
-            if (handle != this.Handle)
-            {
-                var lastPosX = System.Windows.Forms.Cursor.Position.X;
-                var lastPosY = System.Windows.Forms.Cursor.Position.Y;
-                var specs = this.GetWindowPos(handle);
-                Thread.Sleep(100);
-                var specs2 = this.GetWindowPos(handle);
-
-                if (specs.X != specs2.X || specs.Y != specs2.Y && handle != IntPtr.Zero)
-                {
-                    var newX = (specs.X - specs2.X);
-                    var newY = (specs.Y - specs2.Y);
-
-                    SetCursorPos(lastPosX, lastPosY);
-                }
-            }
-        }
-
         private WindowSpecs GetWindowPos(IntPtr handle)
         {
             WindowSpecs specs;
@@ -273,41 +272,32 @@ namespace SchnakyBuddy
         private void MouseEvent_LeftUp(object sender, EventArgs e)
         {
             LeftButtonDown = false;
-            Console.WriteLine("Left mouse up!");
         }
 
         private void MouseEvent_LeftDown(object sender, EventArgs e)
         {
-            try
+            LeftButtonDown = true;
+            lastMouseClickPos = Cursor.Position;
+
+            var handle = GetForegroundWindow();
+            if (handle != SchnakyHandle)
             {
-                LeftButtonDown = true;
-                Console.WriteLine("Left mouse down!");
-                lastMouseClickPos = Cursor.Position;
-
-                var handle = GetForegroundWindow();
-                if (handle != SchnakyHandle)
-                {
-                    lastWindowPos = this.GetWindowPos(handle);
-                }
-
-                while (LeftButtonDown)
-                {
-                    var newWindowPos = this.GetWindowPos(handle);
-                    if ((lastWindowPos.X != newWindowPos.X)
-                        || (lastWindowPos.Y != newWindowPos.Y))
-                    {
-                        //float factor = 0.5;
-                        //var interX = (int)(Cursor.Position.X*factor + lastMouseClickPos.X*(1-factor));
-                        //var interY = (int)(Cursor.Position.Y * factor + lastMouseClickPos.Y * (1 - factor));
-
-                        SetCursorPos(lastMouseClickPos.X, lastMouseClickPos.Y);
-                        //SetCursorPos(interX, interY);
-                    }
-                }
+                lastWindowPos = this.GetWindowPos(handle);
             }
-            catch (Exception ex)
+
+            while (LeftButtonDown)
             {
-                Debug.WriteLine(ex.Message);
+                var newWindowPos = this.GetWindowPos(handle);
+                if ((lastWindowPos.X != newWindowPos.X)
+                    || (lastWindowPos.Y != newWindowPos.Y))
+                {
+                    //float factor = 0.5;
+                    //var interX = (int)(Cursor.Position.X*factor + lastMouseClickPos.X*(1-factor));
+                    //var interY = (int)(Cursor.Position.Y * factor + lastMouseClickPos.Y * (1 - factor));
+
+                    SetCursorPos(lastMouseClickPos.X, lastMouseClickPos.Y);
+                    //SetCursorPos(interX, interY);
+                }
             }
         }
 
@@ -327,20 +317,52 @@ namespace SchnakyBuddy
 
         private void Schnaky_Paint(object sender, PaintEventArgs e)
         {
-            var image = this.SchnakyPicRotated;
-            var destRect = new Rectangle(0, 0, this.Size.Width - 1, this.Size.Height - 1);
-            var srcRect = new Rectangle(0, 0, image.Width, image.Height);
-            e.Graphics.Clear(Color.Transparent);
-            //e.Graphics.DrawRectangle(new Pen(Color.Red), destRect); 
-            e.Graphics.DrawImage(image, destRect, srcRect, GraphicsUnit.Pixel);
+            using (var image = this.SchnakyPicRotated)
+            {
+                var destRect = new Rectangle(0, 0, this.Size.Width - 1, this.Size.Height - 1);
+                var srcRect = new Rectangle(0, 0, image.Width, image.Height);
+                e.Graphics.Clear(Color.Transparent);
+                if (this.TargetWindow)
+                {
+                    using (var pen = new Pen(Color.Red))
+                    {
+                        e.Graphics.DrawRectangle(pen, destRect);
+                    }
+                }
+
+                e.Graphics.DrawImage(image, destRect, srcRect, GraphicsUnit.Pixel);
+            }
         }
 
         private readonly Random r = new Random();
         private static Vector2 RandomTargetPos = Vector2.Zero;
         private void GetNewRandomPos() => RandomTargetPos = new Vector2(this.r.Next(Screen.PrimaryScreen.Bounds.Width - this.Size.Width), this.r.Next(Screen.PrimaryScreen.Bounds.Height - this.Size.Height));
 
-        private void timerRandomPos_Tick(object sender, EventArgs e) => this.GetNewRandomPos();
-
         private void Schnaky_FormClosing(object sender, FormClosingEventArgs e) => this.notifyIconSchnaky = null;
+
+        private bool TargetWindow = false;
+        private WindowInfo SchnakyTargetWindow;
+
+        private void timerGrabWindow_Tick(object sender, EventArgs e)
+        {
+            var windows = WindowEnumerator.GetWindows(true);
+            var window = windows[this.r.Next(windows.Count)];
+            SchnakyTargetWindow = window;
+            this.TargetWindow = true;
+            ShowWindow(window.windowHandle, 1);
+            Debug.WriteLine(window.name);
+            timerMaxGrabTime.Start();
+        }
+
+        private void timerDragWindow_Tick(object sender, EventArgs e)
+        {
+            timerDragWindow.Stop();
+            TargetWindow = false;
+        }
+
+        private void timerMaxGrabTime_Tick(object sender, EventArgs e)
+        {
+            this.TargetWindow = false;
+        }
     }
 }

@@ -32,7 +32,9 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Schnaky));
             this.timerMouseCheck = new System.Windows.Forms.Timer(this.components);
             this.notifyIconSchnaky = new System.Windows.Forms.NotifyIcon(this.components);
-            this.timerRandomPos = new System.Windows.Forms.Timer(this.components);
+            this.timerGrabWindow = new System.Windows.Forms.Timer(this.components);
+            this.timerDragWindow = new System.Windows.Forms.Timer(this.components);
+            this.timerMaxGrabTime = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // timerMouseCheck
@@ -49,10 +51,20 @@
             this.notifyIconSchnaky.Visible = true;
             this.notifyIconSchnaky.Click += new System.EventHandler(this.notifyIconSchnaky_Click);
             // 
-            // timerRandomPos
+            // timerGrabWindow
             // 
-            this.timerRandomPos.Interval = 1000;
-            this.timerRandomPos.Tick += new System.EventHandler(this.timerRandomPos_Tick);
+            this.timerGrabWindow.Interval = 10000;
+            this.timerGrabWindow.Tick += new System.EventHandler(this.timerGrabWindow_Tick);
+            // 
+            // timerDragWindow
+            // 
+            this.timerDragWindow.Interval = 2000;
+            this.timerDragWindow.Tick += new System.EventHandler(this.timerDragWindow_Tick);
+            // 
+            // timerMaxGrabTime
+            // 
+            this.timerMaxGrabTime.Interval = 7000;
+            this.timerMaxGrabTime.Tick += new System.EventHandler(this.timerMaxGrabTime_Tick);
             // 
             // Schnaky
             // 
@@ -80,6 +92,8 @@
 
         private System.Windows.Forms.Timer timerMouseCheck;
         private System.Windows.Forms.NotifyIcon notifyIconSchnaky;
-        private System.Windows.Forms.Timer timerRandomPos;
+        private System.Windows.Forms.Timer timerGrabWindow;
+        private System.Windows.Forms.Timer timerDragWindow;
+        private System.Windows.Forms.Timer timerMaxGrabTime;
     }
 }
