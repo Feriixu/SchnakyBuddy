@@ -89,6 +89,7 @@ namespace SchnakyBuddy
             this.TopMost = true;
             ShowWindow(this.Handle, 1);
             //notifyIconSchnaky.ShowBalloonTip(2, "Schnaky", "is running", ToolTipIcon.Info);
+            var item = new ToolStripItem();
         }
 
         private void StartNewScreenMeltTimer()
